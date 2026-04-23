@@ -12,7 +12,7 @@ const STATUS_OPTIONS = [
   { value: 'normal', label: 'Normal' },
   { value: 'issue', label: 'Issue' },
   { value: 'review', label: 'Review' },
-] as const
+]
 
 const DEMO_IMG =
   'data:image/svg+xml;utf8,' +
@@ -29,64 +29,26 @@ const DEMO_IMG =
     <text x="50%" y="52%" text-anchor="middle" font-family="Arial" font-size="28" fill="#475569">MoveProof Demo Image</text>
   </svg>`)
 
-type Photo = {
-  id: string
-  name: string
-  url: string
-}
-
-type Status = '' | 'normal' | 'issue' | 'review'
-
-type InspectionItem = {
-  status: Status
-  notes: string
-  photos: Photo[]
-}
-
-type InspectionSession = Record<string, Record<string, InspectionItem>>
-
-type MeterRecord = {
-  water: string
-  electricity: string
-  gas: string
-  photos: Photo[]
-}
-
-type Property = {
-  id: string
-  title: string
-  address: string
-  inspections: {
-    move_in: InspectionSession
-    move_out: InspectionSession
-  }
-  meters: {
-    move_in: MeterRecord
-    move_out: MeterRecord
-  }
-  exports: Array<{ id: string; type: string; token: string }>
-}
-
 function uid() {
   return Math.random().toString(36).slice(2, 10)
 }
 
-function badge(status: Status) {
+function badge(status: string) {
   if (status === 'normal') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
   if (status === 'issue') return 'bg-amber-50 text-amber-700 border-amber-200'
   if (status === 'review') return 'bg-slate-100 text-slate-700 border-slate-200'
   return 'bg-white text-slate-400 border-slate-200'
 }
 
-function statusText(status: Status) {
+function statusText(status: string) {
   if (status === 'normal') return 'Normal'
   if (status === 'issue') return 'Issue'
   if (status === 'review') return 'Review'
   return 'Not recorded'
 }
 
-function blankSession(): InspectionSession {
-  const out: InspectionSession = {}
+function blankSession() {
+  const out: Record<string, Record<string, { status: string; notes: string; photos: Array<{ id: string; name: string; url: string }> }>> = {}
   for (const area of AREAS) {
     out[area.name] = {}
     for (const item of area.items) {
@@ -96,7 +58,7 @@ function blankSession(): InspectionSession {
   return out
 }
 
-function makeProperty(title: string, address: string): Property {
+function makeProperty(title: string, address: string) {
   return {
     id: uid(),
     title,
@@ -106,15 +68,15 @@ function makeProperty(title: string, address: string): Property {
       move_out: blankSession(),
     },
     meters: {
-      move_in: { water: '', electricity: '', gas: '', photos: [] },
-      move_out: { water: '', electricity: '', gas: '', photos: [] },
+      move_in: { water: '', electricity: '', gas: '', photos: [] as Array<{ id: string; name: string; url: string }> },
+      move_out: { water: '', electricity: '', gas: '', photos: [] as Array<{ id: string; name: string; url: string }> },
     },
-    exports: [],
+    exports: [] as Array<{ id: string; type: string; token: string }>,
   }
 }
 
-async function filesToPhotos(files: File[]): Promise<Photo[]> {
-  const out: Photo[] = []
+async function filesToPhotos(files: File[]) {
+  const out: Array<{ id: string; name: string; url: string }> = []
   for (const file of files) {
     const url = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
@@ -139,28 +101,44 @@ function exportJSON(filename: string, data: unknown) {
   URL.revokeObjectURL(url)
 }
 
-function TopBar({ title, subtitle, onBack }: { title: string; subtitle?: string; onBack: null | (() => void) }) {
+function TopBar({
+  title,
+  subtitle,
+  onBack,
+}: {
+  title: string
+  subtitle?: string
+  onBack: null | (() => void)
+}) {
   return (
-    <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/90 px-4 py-4 backdrop-blur md:px-5">
+    <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/90 px-5 py-4 backdrop-blur">
       <div className="flex items-start gap-3">
         {onBack ? (
           <button
             onClick={onBack}
-            className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
           >
             返回
           </button>
         ) : null}
-        <div className="min-w-0">
-          <div className="truncate text-lg font-semibold tracking-tight text-slate-900">{title}</div>
-          {subtitle ? <div className="text-sm text-slate-500 break-words">{subtitle}</div> : null}
+        <div>
+          <div className="text-lg font-semibold tracking-tight text-slate-900">{title}</div>
+          {subtitle ? <div className="text-sm text-slate-500">{subtitle}</div> : null}
         </div>
       </div>
     </div>
   )
 }
 
-function Button({ children, onClick, primary = false }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) {
+function Button({
+  children,
+  onClick,
+  primary = false,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  primary?: boolean
+}) {
   return (
     <button
       onClick={onClick}
@@ -213,22 +191,41 @@ function PhotoButtons({
           e.target.value = ''
         }}
       />
-      <button className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={() => libRef.current?.click()}>
+      <button
+        className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        onClick={() => libRef.current?.click()}
+      >
         相册
       </button>
-      <button className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={() => camRef.current?.click()}>
+      <button
+        className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        onClick={() => camRef.current?.click()}
+      >
         相机
       </button>
-      <button className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={onDemo}>
+      <button
+        className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        onClick={onDemo}
+      >
         Demo图
       </button>
     </div>
   )
 }
 
-function PhotoGrid({ photos, onDelete }: { photos: Photo[]; onDelete: (id: string) => void }) {
+function PhotoGrid({
+  photos,
+  onDelete,
+}: {
+  photos: Array<{ id: string; name: string; url: string }>
+  onDelete: (id: string) => void
+}) {
   if (!photos.length) {
-    return <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">还没有图片</div>
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+        还没有图片
+      </div>
+    )
   }
 
   return (
@@ -238,7 +235,10 @@ function PhotoGrid({ photos, onDelete }: { photos: Photo[]; onDelete: (id: strin
           <img src={photo.url} alt={photo.name} className="h-28 w-full object-cover" />
           <div className="flex items-center justify-between gap-2 p-2">
             <div className="truncate text-xs text-slate-700">{photo.name}</div>
-            <button className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-white" onClick={() => onDelete(photo.id)}>
+            <button
+              className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-white"
+              onClick={() => onDelete(photo.id)}
+            >
               删除
             </button>
           </div>
@@ -248,7 +248,7 @@ function PhotoGrid({ photos, onDelete }: { photos: Photo[]; onDelete: (id: strin
   )
 }
 
-export default function MoveProofStablePreview() {
+export default function App() {
   const [screen, setScreen] = useState<'home' | 'property' | 'inspection' | 'item' | 'meters' | 'export' | 'shared'>('home')
   const [sessionType, setSessionType] = useState<'move_in' | 'move_out'>('move_in')
   const [meterMode, setMeterMode] = useState<'move_in' | 'move_out'>('move_in')
@@ -258,7 +258,7 @@ export default function MoveProofStablePreview() {
   const [shareToken, setShareToken] = useState('preview-demo-token')
   const [title, setTitle] = useState('Seattle Apt 302')
   const [address, setAddress] = useState('Belltown, Seattle, WA')
-  const [property, setProperty] = useState<Property>(() => makeProperty('Seattle Apt 302', 'Belltown, Seattle, WA'))
+  const [property, setProperty] = useState(() => makeProperty('Seattle Apt 302', 'Belltown, Seattle, WA'))
 
   const item = property.inspections[sessionType][areaName][itemName]
   const moveInReference = property.inspections.move_in[areaName][itemName]
@@ -295,7 +295,10 @@ export default function MoveProofStablePreview() {
             ...prev.inspections[sessionType][areaName],
             [itemName]: {
               ...prev.inspections[sessionType][areaName][itemName],
-              photos: [...prev.inspections[sessionType][areaName][itemName].photos, { id: uid(), name: 'demo-image', url: DEMO_IMG }],
+              photos: [
+                ...prev.inspections[sessionType][areaName][itemName].photos,
+                { id: uid(), name: 'demo-image', url: DEMO_IMG },
+              ],
             },
           },
         },
@@ -406,31 +409,31 @@ export default function MoveProofStablePreview() {
               screen === 'home'
                 ? 'MoveProof'
                 : screen === 'property'
-                  ? property.title
-                  : screen === 'inspection'
-                    ? sessionType === 'move_in'
-                      ? 'Move-in inspection'
-                      : 'Move-out inspection'
-                    : screen === 'item'
-                      ? itemName
-                      : screen === 'meters'
-                        ? 'Meters & handover'
-                        : screen === 'export'
-                          ? 'Export evidence pack'
-                          : 'Shared evidence pack'
+                ? property.title
+                : screen === 'inspection'
+                ? sessionType === 'move_in'
+                  ? 'Move-in inspection'
+                  : 'Move-out inspection'
+                : screen === 'item'
+                ? itemName
+                : screen === 'meters'
+                ? 'Meters & handover'
+                : screen === 'export'
+                ? 'Export evidence pack'
+                : 'Shared evidence pack'
             }
             subtitle={
               screen === 'home'
                 ? '稳定预览版，已修正图片问题'
                 : screen === 'property'
-                  ? property.address
-                  : screen === 'item'
-                    ? areaName
-                    : screen === 'meters'
-                      ? property.title
-                      : screen === 'export'
-                        ? property.title
-                        : exportMode
+                ? property.address
+                : screen === 'item'
+                ? areaName
+                : screen === 'meters'
+                ? property.title
+                : screen === 'export'
+                ? property.title
+                : exportMode
             }
             onBack={
               screen === 'home'
@@ -440,14 +443,14 @@ export default function MoveProofStablePreview() {
                       screen === 'property'
                         ? 'home'
                         : screen === 'inspection'
-                          ? 'property'
-                          : screen === 'item'
-                            ? 'inspection'
-                            : screen === 'meters'
-                              ? 'property'
-                              : screen === 'export'
-                                ? 'property'
-                                : 'property',
+                        ? 'property'
+                        : screen === 'item'
+                        ? 'inspection'
+                        : screen === 'meters'
+                        ? 'property'
+                        : screen === 'export'
+                        ? 'property'
+                        : 'property'
                     )
             }
           />
@@ -458,7 +461,10 @@ export default function MoveProofStablePreview() {
                 <div className="text-sm text-slate-300">稳定预览版</div>
                 <div className="mt-2 text-2xl font-semibold">MoveProof</div>
                 <div className="mt-4 grid gap-3">
-                  <button className="rounded-2xl bg-white px-4 py-3 text-left font-medium text-slate-900" onClick={() => setScreen('property')}>
+                  <button
+                    className="rounded-2xl bg-white px-4 py-3 text-left font-medium text-slate-900"
+                    onClick={() => setScreen('property')}
+                  >
                     进入房屋详情
                   </button>
                   <button
@@ -485,8 +491,18 @@ export default function MoveProofStablePreview() {
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">快速建档</div>
                 <div className="mt-3 grid gap-3">
-                  <input className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="房屋名称" />
-                  <input className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="地址" />
+                  <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="房屋名称"
+                  />
+                  <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="地址"
+                  />
                   <button
                     className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white"
                     onClick={() => {
@@ -535,7 +551,10 @@ export default function MoveProofStablePreview() {
               >
                 表计与交接物
               </button>
-              <button className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left" onClick={() => setScreen('export')}>
+              <button
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left"
+                onClick={() => setScreen('export')}
+              >
                 导出报告
               </button>
             </div>
@@ -563,7 +582,9 @@ export default function MoveProofStablePreview() {
                             <div className="font-medium text-slate-800">{name}</div>
                             <div className="mt-1 text-xs text-slate-400">{rec.photos.length} image(s)</div>
                           </div>
-                          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(rec.status)}`}>{statusText(rec.status)}</span>
+                          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(rec.status)}`}>
+                            {statusText(rec.status)}
+                          </span>
                         </button>
                       )
                     })}
@@ -587,7 +608,11 @@ export default function MoveProofStablePreview() {
                   {STATUS_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
-                      className={`rounded-2xl border px-3 py-3 text-sm font-medium ${item.status === opt.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700'}`}
+                      className={`rounded-2xl border px-3 py-3 text-sm font-medium ${
+                        item.status === opt.value
+                          ? 'border-slate-900 bg-slate-900 text-white'
+                          : 'border-slate-200 bg-white text-slate-700'
+                      }`}
                       onClick={() => {
                         setProperty((prev) => ({
                           ...prev,
@@ -617,7 +642,11 @@ export default function MoveProofStablePreview() {
                 <div className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">图片</div>
                 <div className="mt-1 text-sm text-slate-500">这里已修正为：相册 / 相机 / 删除</div>
                 <div className="mt-3">
-                  <PhotoButtons onLibraryFiles={addItemPhotos} onCameraFiles={addItemPhotos} onDemo={addDemoItemPhoto} />
+                  <PhotoButtons
+                    onLibraryFiles={addItemPhotos}
+                    onCameraFiles={addItemPhotos}
+                    onDemo={addDemoItemPhoto}
+                  />
                 </div>
                 <div className="mt-3">
                   <PhotoGrid photos={item.photos} onDelete={removeItemPhoto} />
@@ -653,11 +682,14 @@ export default function MoveProofStablePreview() {
                 />
               </div>
 
-              {sessionType === 'move_out' && (moveInReference.status || moveInReference.notes || moveInReference.photos.length) ? (
+              {sessionType === 'move_out' &&
+              (moveInReference.status || moveInReference.notes || moveInReference.photos.length) ? (
                 <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
                   <div className="text-sm font-semibold uppercase tracking-[0.14em] text-amber-800">入住参考</div>
                   <div className="mt-3">
-                    <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(moveInReference.status)}`}>{statusText(moveInReference.status)}</span>
+                    <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(moveInReference.status)}`}>
+                      {statusText(moveInReference.status)}
+                    </span>
                   </div>
                   <div className="mt-3 text-sm text-amber-900">{moveInReference.notes || '无备注'}</div>
                   <div className="mt-3">
@@ -668,7 +700,9 @@ export default function MoveProofStablePreview() {
 
               <div className="grid grid-cols-2 gap-3">
                 <Button onClick={() => setScreen('inspection')}>保存</Button>
-                <Button primary onClick={nextInspectionItem}>保存并下一个</Button>
+                <Button primary onClick={nextInspectionItem}>
+                  保存并下一个
+                </Button>
               </div>
             </div>
           )}
@@ -676,10 +710,20 @@ export default function MoveProofStablePreview() {
           {screen === 'meters' && (
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-2 rounded-3xl bg-slate-100 p-1">
-                <button className={`rounded-[20px] px-3 py-3 text-sm font-medium ${meterMode === 'move_in' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`} onClick={() => setMeterMode('move_in')}>
+                <button
+                  className={`rounded-[20px] px-3 py-3 text-sm font-medium ${
+                    meterMode === 'move_in' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                  }`}
+                  onClick={() => setMeterMode('move_in')}
+                >
                   Move-in
                 </button>
-                <button className={`rounded-[20px] px-3 py-3 text-sm font-medium ${meterMode === 'move_out' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`} onClick={() => setMeterMode('move_out')}>
+                <button
+                  className={`rounded-[20px] px-3 py-3 text-sm font-medium ${
+                    meterMode === 'move_out' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                  }`}
+                  onClick={() => setMeterMode('move_out')}
+                >
                   Move-out
                 </button>
               </div>
@@ -687,9 +731,48 @@ export default function MoveProofStablePreview() {
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">表计读数</div>
                 <div className="mt-3 grid gap-3">
-                  <input className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={meter.water} onChange={(e) => setProperty((prev) => ({ ...prev, meters: { ...prev.meters, [meterMode]: { ...prev.meters[meterMode], water: e.target.value } } }))} placeholder="Water" />
-                  <input className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={meter.electricity} onChange={(e) => setProperty((prev) => ({ ...prev, meters: { ...prev.meters, [meterMode]: { ...prev.meters[meterMode], electricity: e.target.value } } }))} placeholder="Electricity" />
-                  <input className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={meter.gas} onChange={(e) => setProperty((prev) => ({ ...prev, meters: { ...prev.meters, [meterMode]: { ...prev.meters[meterMode], gas: e.target.value } } }))} placeholder="Gas" />
+                  <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={meter.water}
+                    onChange={(e) =>
+                      setProperty((prev) => ({
+                        ...prev,
+                        meters: {
+                          ...prev.meters,
+                          [meterMode]: { ...prev.meters[meterMode], water: e.target.value },
+                        },
+                      }))
+                    }
+                    placeholder="Water"
+                  />
+                  <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={meter.electricity}
+                    onChange={(e) =>
+                      setProperty((prev) => ({
+                        ...prev,
+                        meters: {
+                          ...prev.meters,
+                          [meterMode]: { ...prev.meters[meterMode], electricity: e.target.value },
+                        },
+                      }))
+                    }
+                    placeholder="Electricity"
+                  />
+                  <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={meter.gas}
+                    onChange={(e) =>
+                      setProperty((prev) => ({
+                        ...prev,
+                        meters: {
+                          ...prev.meters,
+                          [meterMode]: { ...prev.meters[meterMode], gas: e.target.value },
+                        },
+                      }))
+                    }
+                    placeholder="Gas"
+                  />
                 </div>
               </div>
 
@@ -697,14 +780,20 @@ export default function MoveProofStablePreview() {
                 <div className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">表计图片</div>
                 <div className="mt-1 text-sm text-slate-500">这里也已修正为：相册 / 相机 / 删除</div>
                 <div className="mt-3">
-                  <PhotoButtons onLibraryFiles={addMeterPhotos} onCameraFiles={addMeterPhotos} onDemo={addDemoMeterPhoto} />
+                  <PhotoButtons
+                    onLibraryFiles={addMeterPhotos}
+                    onCameraFiles={addMeterPhotos}
+                    onDemo={addDemoMeterPhoto}
+                  />
                 </div>
                 <div className="mt-3">
                   <PhotoGrid photos={meter.photos} onDelete={removeMeterPhoto} />
                 </div>
               </div>
 
-              <Button primary onClick={() => setScreen('property')}>保存并返回</Button>
+              <Button primary onClick={() => setScreen('property')}>
+                保存并返回
+              </Button>
             </div>
           )}
 
@@ -716,7 +805,11 @@ export default function MoveProofStablePreview() {
                   {['Move-in report', 'Move-out report', 'Full comparison pack'].map((mode) => (
                     <button
                       key={mode}
-                      className={`rounded-2xl border px-4 py-4 text-left text-sm font-medium ${exportMode === mode ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700'}`}
+                      className={`rounded-2xl border px-4 py-4 text-left text-sm font-medium ${
+                        exportMode === mode
+                          ? 'border-slate-900 bg-slate-900 text-white'
+                          : 'border-slate-200 bg-white text-slate-700'
+                      }`}
                       onClick={() => setExportMode(mode)}
                     >
                       {mode}
@@ -724,8 +817,12 @@ export default function MoveProofStablePreview() {
                   ))}
                 </div>
               </div>
-              <Button primary onClick={generateReport}>打开报告预览</Button>
-              <Button onClick={() => exportJSON('moveproof-data.json', property)}>下载 JSON 数据</Button>
+              <Button primary onClick={generateReport}>
+                打开报告预览
+              </Button>
+              <Button onClick={() => exportJSON('moveproof-data.json', property)}>
+                下载 JSON 数据
+              </Button>
             </div>
           )}
 
@@ -746,7 +843,9 @@ export default function MoveProofStablePreview() {
                         <div key={entry.item} className="rounded-2xl bg-slate-50 p-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="font-medium text-slate-900">{entry.item}</div>
-                            <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(entry.status)}`}>{statusText(entry.status)}</span>
+                            <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(entry.status)}`}>
+                              {statusText(entry.status)}
+                            </span>
                           </div>
                           <div className="mt-2 text-sm text-slate-600">{entry.notes || 'No note.'}</div>
                           {entry.photos.length ? (
@@ -760,7 +859,9 @@ export default function MoveProofStablePreview() {
                   </div>
                 ))
               ) : (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">当前报告还没有可展示的检查项。</div>
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+                  当前报告还没有可展示的检查项。
+                </div>
               )}
               <Button onClick={() => window.print()}>打印当前报告</Button>
             </div>
