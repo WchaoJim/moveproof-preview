@@ -397,13 +397,13 @@ export default function App() {
                   </div>
                 </div>
               )) : <div style={emptyPhotoStyle}>当前报告还没有可展示的检查项。</div>}
-              <button style={secondaryButtonStyle} onClick={() => window.print()}>打印当前报告</button>
+              <Button onClick={() => window.print()}>打印当前报告</Button>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const pageStyle: React.CSSProperties = { minHeight: '100vh', background: '#f1f5f9', padding: 12, overflowX: 'hidden' }
