@@ -397,7 +397,7 @@ export default function App() {
                   </div>
                 </div>
               )) : <div style={emptyPhotoStyle}>当前报告还没有可展示的检查项。</div>}
-              <Button onClick={() => window.print()}>打印当前报告</Button>
+              <button style={secondaryButtonStyle} onClick={() => window.print()}>打印当前报告</button>
             </div>
           )}
         </div>
