@@ -81,6 +81,18 @@ async function filesToPhotos(files: File[]) {
   return out
 }
 
+function exportJSON(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json;charset=utf-8',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function badgeStyle(status: Status) {
   if (status === 'normal') return { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' }
   if (status === 'issue') return { bg: '#fffbeb', color: '#b45309', border: '#fde68a' }
@@ -523,6 +535,21 @@ const cardButtonStyle: React.CSSProperties = { width: '100%', borderRadius: 18, 
 const rowButtonStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: 'none', borderRadius: 16, padding: 12, background: '#fff', textAlign: 'left', cursor: 'pointer' }
 const primaryButtonStyle: React.CSSProperties = { width: '100%', borderRadius: 16, border: 'none', background: '#0f172a', color: '#fff', padding: '12px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }
 const secondaryButtonStyle: React.CSSProperties = { width: '100%', borderRadius: 16, border: '1px solid #cbd5e1', background: '#fff', color: '#334155', padding: '12px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }
+const buttonDarkLightStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  background: '#ffffff',
+  color: '#0f172a',
+  border: '1px solid #ffffff',
+  textAlign: 'left',
+}
+
+const buttonDarkGhostStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  background: 'rgba(255,255,255,.10)',
+  color: '#ffffff',
+  border: '1px solid rgba(255,255,255,.18)',
+  textAlign: 'left',
+}
 const inputStyle: React.CSSProperties = { width: '100%', borderRadius: 16, border: '1px solid #cbd5e1', padding: '12px 16px', fontSize: 14, outline: 'none' }
 const emptyBoxStyle: React.CSSProperties = { borderRadius: 16, border: '1px dashed #cbd5e1', padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 14, background: '#fff' }
 const selectedStatusStyle: React.CSSProperties = { borderRadius: 16, border: '1px solid #0f172a', background: '#0f172a', color: '#fff', padding: '12px 10px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }
