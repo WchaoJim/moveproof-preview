@@ -377,33 +377,40 @@ export default function App() {
             </div>
           ) : null}
 
-          {screen === 'shared' ? (
-            <div style={contentStyle}>
-              <div style={heroStyle}><div style={{ fontSize: 14, opacity: 0.8 }}>Rental Evidence Pack</div><div style={{ marginTop: 8, fontSize: 34, fontWeight: 800 }}>{property.title}</div><div style={{ marginTop: 8, fontSize: 16, opacity: 0.9 }}>{property.address}</div><div style={{ marginTop: 12, fontSize: 12, opacity: 0.8 }}>Token: {shareToken}</div></div>
+          {screen === 'shared' && (
+            <div className="p-5 space-y-4">
+              <div className="rounded-3xl bg-slate-900 p-5 text-white">
+                <div className="text-sm text-slate-300">Rental Evidence Pack</div>
+                <div className="mt-2 text-2xl font-semibold">{property.title}</div>
+                <div className="mt-1 text-sm text-slate-300">{property.address}</div>
+                <div className="mt-3 text-xs text-slate-300">Token: {shareToken}</div>
+              </div>
               {reportEntries.length ? reportEntries.map((block) => (
-                <div key={block.area} style={cardStyle}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>{block.area}</div>
-                  <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
+                <div key={block.area} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="font-semibold text-slate-900">{block.area}</div>
+                  <div className="mt-3 grid gap-3">
                     {block.entries.map((entry) => (
-                      <div key={entry.item} style={innerCardStyle}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{entry.item}</div>
-                          <span style={statusStyle(entry.status)}>{statusLabel(entry.status)}</span>
+                      <div key={entry.item} className="rounded-2xl bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium text-slate-900">{entry.item}</div>
+                          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${badge(entry.status)}`}>{statusText(entry.status)}</span>
                         </div>
-                        <div style={{ marginTop: 10, color: '#475569' }}>{entry.notes || 'No note.'}</div>
-                        {entry.photos.length ? <div style={{ marginTop: 14 }}><PhotoGrid photos={entry.photos} onDelete={() => {}} readOnly /></div> : null}
+                        <div className="mt-2 text-sm text-slate-600">{entry.notes || 'No note.'}</div>
+                        {entry.photos.length ? <div className="mt-3"><PhotoGrid photos={entry.photos} onDelete={() => {}} /></div> : null}
                       </div>
                     ))}
                   </div>
                 </div>
-              )) : <div style={emptyPhotoStyle}>当前报告还没有可展示的检查项。</div>}
-              <button style={secondaryButtonStyle} onClick={() => window.print()}>打印当前报告</button>
+              )) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">当前报告还没有可展示的检查项。</div>
+              )}
+              <Button onClick={() => window.print()}>打印当前报告</Button>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const pageStyle: React.CSSProperties = { minHeight: '100vh', background: '#f1f5f9', padding: 12, overflowX: 'hidden' }
